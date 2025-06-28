@@ -27,10 +27,14 @@ export async function createInvoice(formData: FormData) {
     const amountInCents = amount * 100; // It's usually good practice to store monetary values in cents in your database to eliminate JavaScript floating-point errors and ensure greater accuracy.
     const date = new Date().toISOString().split('T')[0]; // create a new date with the format "YYYY-MM-DD" for the invoice's creation date
 
-    await sql`
+    try {
+        await sql`
         INSERT INTO invoices (customer_id, amount, status, date)
         VALUES (${customerId}, ${amountInCents}, ${status}, ${date})
-    `;
+        `;
+    } catch (error) {
+        throw new Error(`Failed to create invoice: ${(error as Error).message}`);
+    }
 
     revalidatePath('/dashboard/invoices'); // Since you're updating the data displayed in the invoices route, you want to clear this cache and trigger a new request to the server.
     redirect('/dashboard/invoices'); // redirect the user back to the /dashboard/invoices page
@@ -47,11 +51,15 @@ export async function updateInvoice(id: string, formData: FormData) {
     
     const amountInCents = amount * 100;
     
-    await sql`
-        UPDATE invoices
-        SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
-        WHERE id = ${id}
-    `;
+    try {
+        await sql`
+            UPDATE invoices
+            SET customer_id = ${customerId}, amount = ${amountInCents}, status = ${status}
+            WHERE id = ${id}
+        `;
+    } catch (error) {
+        throw new Error(`Failed to update invoice: ${(error as Error).message}`);
+    }
     
     revalidatePath('/dashboard/invoices');
     redirect('/dashboard/invoices');
